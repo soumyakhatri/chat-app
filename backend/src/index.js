@@ -1,11 +1,21 @@
 const app = require('./app');
 const env = require('./config/env');
+const connectDB = require('./db/connect');
 const { initSocket } = require('./socket');
 
-const server = app.listen(env.port, () => {
-  console.log(`Server running on port ${env.port} (${env.nodeEnv})`);
+async function start() {
+  await connectDB();
+
+  const server = app.listen(env.port, () => {
+    console.log(`Server running on port ${env.port} (${env.nodeEnv})`);
+  });
+
+  const io = initSocket(server);
+
+  return { server, io };
+}
+
+start().catch((err) => {
+  console.error('Failed to start server:', err.message);
+  process.exit(1);
 });
-
-const io = initSocket(server);
-
-module.exports = { server, io };
