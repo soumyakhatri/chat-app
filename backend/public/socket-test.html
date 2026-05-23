@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Socket.IO test</title>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.IO test</h1>
+  <p>Open the browser console (F12) to see connection logs.</p>
+  <button id="ping">Send ping</button>
+  <pre id="log"></pre>
+  <script>
+    const logEl = document.getElementById('log');
+    function log(...args) {
+      const line = args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
+      logEl.textContent += line + '\n';
+      console.log(...args);
+    }
+
+    const socket = io(window.location.origin);
+
+    socket.on('connect', () => log('connected:', socket.id));
+    socket.on('disconnect', (reason) => log('disconnected:', reason));
+    socket.on('pong', (data) => log('pong:', data));
+
+    document.getElementById('ping').addEventListener('click', () => {
+      socket.emit('ping');
+      log('sent ping');
+    });
+  </script>
+</body>
+</html>
