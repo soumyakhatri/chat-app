@@ -2,14 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Socket.IO test</title>
+  <title>Direct message test</title>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 1rem auto; }
+    label { display: block; margin-top: 0.75rem; }
+    input, button { margin-top: 0.25rem; }
+    pre { background: #f4f4f4; padding: 0.75rem; min-height: 120px; }
+  </style>
 </head>
 <body>
-  <h1>Socket.IO test</h1>
-  <p>Open the browser console (F12) to see connection logs.</p>
-  <button id="ping">Send ping</button>
+  <h1>Direct message test</h1>
+  <p>Use two browser tabs with different user IDs to test chat.</p>
+
+  <label>
+    Your user ID
+    <input id="userId" type="text" placeholder="e.g. alice" />
+  </label>
+  <button id="register">Register</button>
+
+  <label>
+    Send to user ID
+    <input id="toUserId" type="text" placeholder="e.g. bob" />
+  </label>
+  <label>
+    Message
+    <input id="content" type="text" placeholder="Hello!" />
+  </label>
+  <button id="send">Send direct message</button>
+  <button id="history">Load history</button>
+
   <pre id="log"></pre>
+
   <script>
     const logEl = document.getElementById('log');
     function log(...args) {
@@ -21,13 +45,32 @@
     const socket = io(window.location.origin);
 
     socket.on('connect', () => log('connected:', socket.id));
-    socket.on('disconnect', (reason) => log('disconnected:', reason));
-    socket.on('pong', (data) => log('pong:', data));
+    socket.on('user:registered', (data) => log('registered:', data));
+    socket.on('user:error', (data) => log('user error:', data));
+    socket.on('message:new', (data) => log('message:new', data));
+    socket.on('message:history', (data) => log('message:history', data));  
+    socket.on('message:error', (data) => log('message error:', data));
 
-    document.getElementById('ping').addEventListener('click', () => {
-      socket.emit('ping');
-      log('sent ping');
+    document.getElementById('register').addEventListener('click', () => {
+      const userId = document.getElementById('userId').value.trim();
+      socket.emit('user:register', { userId, displayName: userId });
+      log('sent user:register', userId);
     });
+
+    document.getElementById('send').addEventListener('click', () => {
+      socket.emit('message:direct', {
+        toUserId: document.getElementById('toUserId').value.trim(),
+        content: document.getElementById('content').value,
+      });
+      log('sent message:direct');
+    });
+
+    document.getElementById('history').addEventListener('click', () => {
+      socket.emit('message:history', {
+        otherUserId: document.getElementById('toUserId').value.trim(),
+      });
+      log('sent message:history');
+x    });
   </script>
 </body>
 </html>
