@@ -7,7 +7,9 @@ async function start() {
   await connectDB();
 
   const server = app.listen(env.port, () => {
-    console.log(`Server running on port ${env.port} (${env.nodeEnv})`);
+    console.log(
+      `[${env.serverId}] running on port ${env.port} (${env.nodeEnv})`
+    );
   });
 
   const io = initSocket(server);

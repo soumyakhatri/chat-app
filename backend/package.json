@@ -5,7 +5,10 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "dev:server1": "cross-env PORT=3001 SERVER_ID=server-1 nodemon src/index.js",
+    "dev:server2": "cross-env PORT=3002 SERVER_ID=server-2 nodemon src/index.js",
+    "dev:both": "concurrently -n server1,server2 -c blue,green \"npm run dev:server1\" \"npm run dev:server2\""
   },
   "keywords": [],
   "author": "Soumya Khatri",
@@ -18,6 +21,8 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "nodemon": "^3.1.9"
   }
 }
