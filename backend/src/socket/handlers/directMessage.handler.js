@@ -1,5 +1,10 @@
 const userRegistry = require('../userRegistry');
-const { findOrCreateDirectConversation, findDirectConversation } = require('../../services/conversation.service');
+const {
+  findOrCreateDirectConversation,
+  findDirectConversation,
+  findConversationById,
+  isMember,
+} = require('../../services/conversation.service');
 const {
   createMessage,
   getConversationHistory,
@@ -57,7 +62,7 @@ function registerDirectMessageHandlers(io, socket) {
     }
   });
 
-  socket.on('message:history', async ({ otherUserId }) => {
+  socket.on('message:history', async ({ otherUserId, conversationId }) => {
     try {
       const senderId = socket.data.userId;
 
@@ -66,12 +71,21 @@ function registerDirectMessageHandlers(io, socket) {
         return;
       }
 
-      if (!otherUserId || typeof otherUserId !== 'string' || !otherUserId.trim()) {
-        socket.emit('message:error', { error: 'otherUserId is required' });
+      let conversation;
+
+      if (conversationId) {
+        conversation = await findConversationById(conversationId);
+
+        if (!conversation || !isMember(conversation, senderId)) {
+          socket.emit('message:error', { error: 'Conversation not found' });
+          return;
+        }
+      } else if (otherUserId && typeof otherUserId === 'string' && otherUserId.trim()) {
+        conversation = await findDirectConversation(senderId, otherUserId.trim());
+      } else {
+        socket.emit('message:error', { error: 'otherUserId or conversationId is required' });
         return;
       }
-
-      const conversation = await findDirectConversation(senderId, otherUserId.trim());
 
       if (!conversation) {
         socket.emit('message:history', { messages: [] });

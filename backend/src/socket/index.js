@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const registerUserHandlers = require('./handlers/user.handler');
 const registerDirectMessageHandlers = require('./handlers/directMessage.handler');
+const registerGroupMessageHandlers = require('./handlers/groupMessage.handler');
 
 function initSocket(server) {
   const io = new Server(server, {
@@ -15,6 +16,7 @@ function initSocket(server) {
 
     registerUserHandlers(socket);
     registerDirectMessageHandlers(io, socket);
+    registerGroupMessageHandlers(io, socket);
 
     socket.on('disconnect', (reason) => {
       console.log(`Socket disconnected: ${socket.id} (${reason})`);
