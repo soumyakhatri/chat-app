@@ -2,35 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Direct message test</title>
+  <title>Chat test</title>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <style>
-    body { font-family: sans-serif; max-width: 640px; margin: 1rem auto; }
-    label { display: block; margin-top: 0.75rem; }
+    body { font-family: sans-serif; max-width: 720px; margin: 1rem auto; }
+    section { border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; }
+    label { display: block; margin-top: 0.5rem; }
     input, button { margin-top: 0.25rem; }
     pre { background: #f4f4f4; padding: 0.75rem; min-height: 120px; }
   </style>
 </head>
 <body>
-  <h1>Direct message test</h1>
-  <p>Use two browser tabs with different user IDs to test chat.</p>
+  <h1>Chat test</h1>
+  <p>Use multiple tabs with different user IDs.</p>
 
-  <label>
-    Your user ID
-    <input id="userId" type="text" placeholder="e.g. alice" />
-  </label>
-  <button id="register">Register</button>
+  <section>
+    <h2>Register</h2>
+    <label>Your user ID <input id="userId" type="text" placeholder="alice" /></label>
+    <button id="register">Register</button>
+  </section>
 
-  <label>
-    Send to user ID
-    <input id="toUserId" type="text" placeholder="e.g. bob" />
-  </label>
-  <label>
-    Message
-    <input id="content" type="text" placeholder="Hello!" />
-  </label>
-  <button id="send">Send direct message</button>
-  <button id="history">Load history</button>
+  <section>
+    <h2>Direct message</h2>
+    <label>To user ID <input id="toUserId" type="text" placeholder="bob" /></label>
+    <label>Message <input id="content" type="text" placeholder="Hello!" /></label>
+    <button id="sendDirect">Send direct</button>
+    <button id="historyDirect">Direct history</button>
+  </section>
+
+  <section>
+    <h2>Group chat</h2>
+    <label>Group name <input id="groupName" type="text" placeholder="Study group" /></label>
+    <label>Member IDs (comma-separated) <input id="groupMembers" type="text" placeholder="bob,carol" /></label>
+    <button id="createGroup">Create group</button>
+    <label>Conversation ID <input id="conversationId" type="text" placeholder="paste from group:created" /></label>
+    <button id="joinGroup">Join group room</button>
+    <label>Group message <input id="groupContent" type="text" placeholder="Hi everyone!" /></label>
+    <button id="sendGroup">Send group message</button>
+    <button id="historyGroup">Group history</button>
+  </section>
 
   <pre id="log"></pre>
 
@@ -47,8 +57,14 @@
     socket.on('connect', () => log('connected:', socket.id));
     socket.on('user:registered', (data) => log('registered:', data));
     socket.on('user:error', (data) => log('user error:', data));
+    socket.on('group:created', (data) => {
+      log('group:created', data);
+      document.getElementById('conversationId').value = data.conversation.id;
+    });
+    socket.on('group:joined', (data) => log('group:joined', data));
+    socket.on('group:error', (data) => log('group error:', data));
     socket.on('message:new', (data) => log('message:new', data));
-    socket.on('message:history', (data) => log('message:history', data));  
+    socket.on('message:history', (data) => log('message:history', data));
     socket.on('message:error', (data) => log('message error:', data));
 
     document.getElementById('register').addEventListener('click', () => {
@@ -57,7 +73,7 @@
       log('sent user:register', userId);
     });
 
-    document.getElementById('send').addEventListener('click', () => {
+    document.getElementById('sendDirect').addEventListener('click', () => {
       socket.emit('message:direct', {
         toUserId: document.getElementById('toUserId').value.trim(),
         content: document.getElementById('content').value,
@@ -65,12 +81,46 @@
       log('sent message:direct');
     });
 
-    document.getElementById('history').addEventListener('click', () => {
+    document.getElementById('historyDirect').addEventListener('click', () => {
       socket.emit('message:history', {
         otherUserId: document.getElementById('toUserId').value.trim(),
       });
-      log('sent message:history');
-x    });
+      log('sent message:history (direct)');
+    });
+
+    document.getElementById('createGroup').addEventListener('click', () => {
+      const memberIds = document.getElementById('groupMembers').value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      socket.emit('group:create', {
+        name: document.getElementById('groupName').value.trim(),
+        memberIds,
+      });
+      log('sent group:create');
+    });
+
+    document.getElementById('joinGroup').addEventListener('click', () => {
+      socket.emit('group:join', {
+        conversationId: document.getElementById('conversationId').value.trim(),
+      });
+      log('sent group:join');
+    });
+
+    document.getElementById('sendGroup').addEventListener('click', () => {
+      socket.emit('message:group', {
+        conversationId: document.getElementById('conversationId').value.trim(),
+        content: document.getElementById('groupContent').value,
+      });
+      log('sent message:group');
+    });
+
+    document.getElementById('historyGroup').addEventListener('click', () => {
+      socket.emit('message:history', {
+        conversationId: document.getElementById('conversationId').value.trim(),
+      });
+      log('sent message:history (group)');
+    });
   </script>
 </body>
 </html>
