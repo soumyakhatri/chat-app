@@ -1,3 +1,4 @@
+const { publishChatEvent } = require('../../redis/pubsub');
 const {
   createGroup,
   findConversationById,
@@ -125,7 +126,18 @@ function registerGroupMessageHandlers(io, socket) {
       });
 
       const payload = { message: formatMessage(message) };
-      io.to(getRoomName(conversation._id)).emit('message:new', payload);
+      const room = getRoomName(conversation._id);
+
+      io.to(room).emit('message:new', payload);
+
+      await publishChatEvent({
+        type: 'message:new',
+        target: {
+          kind: 'room',
+          conversationId: conversation._id.toString(),
+        },
+        payload,
+      });
     } catch (err) {
       socket.emit('message:error', { error: err.message });
     }
