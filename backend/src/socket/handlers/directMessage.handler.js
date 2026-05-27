@@ -1,3 +1,4 @@
+const { publishChatEvent } = require('../../redis/pubsub');
 const userRegistry = require('../userRegistry');
 const {
   findOrCreateDirectConversation,
@@ -54,9 +55,21 @@ function registerDirectMessageHandlers(io, socket) {
       // Recipient if online on THIS instance
       const recipientSocketId = userRegistry.getSocketId(recipientId);
       // send message to the recipient
+
+      // if the recipient is online on THIS instance, send the message to them
+      // recipient is online means they are connected to this server instance
+      // works if the recipient is on the same server instance
       if (recipientSocketId) {
         io.to(recipientSocketId).emit('message:new', payload);
       }
+      // if the recipient is not online on THIS instance, publish the message to the Redis channel
+      // recipient is not online means they are not connected to this server instance or on a different server instance
+      // works if the recipient is on a different server instance
+      await publishChatEvent({
+        type: 'message:new',
+        target: { kind: 'user', userId: recipientId },
+        payload,
+      });
     } catch (err) {
       socket.emit('message:error', { error: err.message });
     }
