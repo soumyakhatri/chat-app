@@ -18,7 +18,7 @@ function registerDirectMessageHandlers(io, socket) {
       const senderId = socket.data.userId;
 
       if (!senderId) {
-        socket.emit('message:error', { error: 'Register with user:register first' });
+        socket.emit('message:error', { error: 'Not authenticated' });
         return;
       }
 
@@ -80,7 +80,7 @@ function registerDirectMessageHandlers(io, socket) {
       const senderId = socket.data.userId;
 
       if (!senderId) {
-        socket.emit('message:error', { error: 'Register with user:register first' });
+        socket.emit('message:error', { error: 'Not authenticated' });
         return;
       }
 

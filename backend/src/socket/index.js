@@ -1,4 +1,5 @@
 const { Server } = require('socket.io');
+const { socketAuthMiddleware } = require('./middleware/auth.middleware');
 const registerUserHandlers = require('./handlers/user.handler');
 const registerDirectMessageHandlers = require('./handlers/directMessage.handler');
 const registerGroupMessageHandlers = require('./handlers/groupMessage.handler');
@@ -11,8 +12,12 @@ function initSocket(server) {
     },
   });
 
+  io.use(socketAuthMiddleware);
+
   io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    console.log(
+      `Socket connected: ${socket.id} (user: ${socket.data.userId})`
+    );
 
     registerUserHandlers(socket);
     registerDirectMessageHandlers(io, socket);

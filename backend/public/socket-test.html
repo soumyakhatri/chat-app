@@ -14,12 +14,12 @@
 </head>
 <body>
   <h1>Chat test</h1>
-  <p>Use multiple tabs with different user IDs.</p>
+  <p>Log in via POST /api/auth/login first, then paste the JWT below.</p>
 
   <section>
-    <h2>Register</h2>
-    <label>Your user ID <input id="userId" type="text" placeholder="alice" /></label>
-    <button id="register">Register</button>
+    <h2>Connect</h2>
+    <label>JWT token <input id="token" type="text" placeholder="eyJhbG..." style="width:100%" /></label>
+    <button id="connect">Connect socket</button>
   </section>
 
   <section>
@@ -52,28 +52,35 @@
       console.log(...args);
     }
 
-    const socket = io(window.location.origin);
+    let socket = null;
 
-    socket.on('connect', () => log('connected:', socket.id));
-    socket.on('user:registered', (data) => log('registered:', data));
-    socket.on('user:error', (data) => log('user error:', data));
-    socket.on('group:created', (data) => {
+    function attachListeners(s) {
+    s.on('connect', () => log('connected:', s.id));
+    s.on('user:registered', (data) => log('registered:', data));
+    s.on('user:error', (data) => log('user error:', data));
+    s.on('connect_error', (err) => log('connect_error:', err.message));
+    s.on('group:created', (data) => {
       log('group:created', data);
       document.getElementById('conversationId').value = data.conversation.id;
     });
-    socket.on('group:joined', (data) => log('group:joined', data));
-    socket.on('group:error', (data) => log('group error:', data));
-    socket.on('message:new', (data) => log('message:new', data));
-    socket.on('message:history', (data) => log('message:history', data));
-    socket.on('message:error', (data) => log('message error:', data));
+    s.on('group:joined', (data) => log('group:joined', data));
+    s.on('group:error', (data) => log('group error:', data));
+    s.on('message:new', (data) => log('message:new', data));
+    s.on('message:history', (data) => log('message:history', data));
+    s.on('message:error', (data) => log('message error:', data));
+    }
 
-    document.getElementById('register').addEventListener('click', () => {
-      const userId = document.getElementById('userId').value.trim();
-      socket.emit('user:register', { userId, displayName: userId });
-      log('sent user:register', userId);
+    document.getElementById('connect').addEventListener('click', () => {
+      const token = document.getElementById('token').value.trim();
+      if (!token) return log('token required');
+      if (socket) socket.disconnect();
+      socket = io(window.location.origin, { auth: { token } });
+      attachListeners(socket);
+      log('connecting with JWT…');
     });
 
     document.getElementById('sendDirect').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       socket.emit('message:direct', {
         toUserId: document.getElementById('toUserId').value.trim(),
         content: document.getElementById('content').value,
@@ -82,6 +89,7 @@
     });
 
     document.getElementById('historyDirect').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       socket.emit('message:history', {
         otherUserId: document.getElementById('toUserId').value.trim(),
       });
@@ -89,6 +97,7 @@
     });
 
     document.getElementById('createGroup').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       const memberIds = document.getElementById('groupMembers').value
         .split(',')
         .map((s) => s.trim())
@@ -101,6 +110,7 @@
     });
 
     document.getElementById('joinGroup').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       socket.emit('group:join', {
         conversationId: document.getElementById('conversationId').value.trim(),
       });
@@ -108,6 +118,7 @@
     });
 
     document.getElementById('sendGroup').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       socket.emit('message:group', {
         conversationId: document.getElementById('conversationId').value.trim(),
         content: document.getElementById('groupContent').value,
@@ -116,6 +127,7 @@
     });
 
     document.getElementById('historyGroup').addEventListener('click', () => {
+      if (!socket) return log('connect first');
       socket.emit('message:history', {
         conversationId: document.getElementById('conversationId').value.trim(),
       });

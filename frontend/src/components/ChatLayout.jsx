@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useChat } from '../context/ChatContext';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import CreateGroupModal from './CreateGroupModal';
+import NewChatModal from './NewChatModal';
+import ConversationList from './ConversationList';
 
 export default function ChatLayout() {
   const {
@@ -12,28 +14,38 @@ export default function ChatLayout() {
     error,
     setError,
     activeChat,
-    groups,
+    conversations,
+    conversationsLoading,
     activeMessages,
     logout,
+    selectConversation,
     selectDirectChat,
-    selectGroupChat,
     sendMessage,
     createGroup,
   } = useChat();
 
-  const [recipientId, setRecipientId] = useState('');
+  const [search, setSearch] = useState('');
+  const [showNewChat, setShowNewChat] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
 
-  const handleStartDirect = (e) => {
-    e.preventDefault();
-    selectDirectChat(recipientId);
-    setRecipientId('');
-  };
+  const filteredConversations = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return conversations;
 
-  const chatTitle =
-    activeChat?.type === 'direct'
-      ? activeChat.otherUserId
-      : activeChat?.name || 'Select a chat';
+    return conversations.filter((c) => {
+      const name = (c.name || '').toLowerCase();
+      const otherId = (c.otherUser?.userId || '').toLowerCase();
+      const preview = (c.lastMessage?.content || '').toLowerCase();
+      return name.includes(query) || otherId.includes(query) || preview.includes(query);
+    });
+  }, [conversations, search]);
+
+  const chatTitle = useMemo(() => {
+    if (!activeChat) return 'Select a chat';
+    if (activeChat.name) return activeChat.name;
+    if (activeChat.type === 'direct') return activeChat.otherUserId;
+    return 'Chat';
+  }, [activeChat]);
 
   const canSend = isRegistered && !!activeChat;
 
@@ -50,56 +62,46 @@ export default function ChatLayout() {
           </button>
         </header>
 
-        <section className="sidebar-section">
-          <h3>Direct message</h3>
-          <form className="inline-form" onSubmit={handleStartDirect}>
-            <input
-              type="text"
-              value={recipientId}
-              onChange={(e) => setRecipientId(e.target.value)}
-              placeholder="Recipient user ID"
-            />
-            <button type="submit">Chat</button>
-          </form>
-        </section>
-
-        <section className="sidebar-section">
-          <div className="section-header">
-            <h3>Groups</h3>
+        <div className="sidebar-toolbar">
+          <input
+            type="search"
+            className="conversation-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search chats…"
+          />
+          <div className="sidebar-actions">
             <button
               type="button"
-              className="btn-small"
+              className="btn-icon"
+              onClick={() => setShowNewChat(true)}
+              disabled={!isRegistered}
+              title="New chat"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className="btn-icon btn-icon--secondary"
               onClick={() => setShowGroupModal(true)}
               disabled={!isRegistered}
+              title="New group"
             >
-              + New
+              G
             </button>
           </div>
-          <ul className="group-list">
-            {groups.length === 0 && (
-              <li className="group-list-empty">No groups yet</li>
-            )}
-            {groups.map((group) => (
-              <li key={group.id}>
-                <button
-                  type="button"
-                  className={`group-item ${
-                    activeChat?.type === 'group' &&
-                    activeChat.conversationId === group.id
-                      ? 'group-item--active'
-                      : ''
-                  }`}
-                  onClick={() => selectGroupChat(group)}
-                >
-                  {group.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        </div>
+
+        <ConversationList
+          conversations={filteredConversations}
+          loading={conversationsLoading}
+          activeChat={activeChat}
+          currentUserId={user.userId}
+          onSelect={selectConversation}
+        />
 
         <p className={`status status--${connectionStatus}`}>
-          {isRegistered ? 'Registered' : 'Registering…'} · {connectionStatus}
+          {isRegistered ? 'Online' : 'Connecting…'} · {connectionStatus}
         </p>
       </aside>
 
@@ -125,7 +127,7 @@ export default function ChatLayout() {
 
         {!activeChat ? (
           <div className="chat-placeholder">
-            <p>Start a direct chat or create a group to begin.</p>
+            <p>Select a conversation or start a new chat.</p>
           </div>
         ) : (
           <>
@@ -135,13 +137,20 @@ export default function ChatLayout() {
               disabled={!canSend}
               placeholder={
                 activeChat.type === 'direct'
-                  ? `Message ${activeChat.otherUserId}…`
-                  : 'Message group…'
+                  ? `Message ${activeChat.name || activeChat.otherUserId}…`
+                  : `Message ${activeChat.name || 'group'}…`
               }
             />
           </>
         )}
       </main>
+
+      {showNewChat && (
+        <NewChatModal
+          onClose={() => setShowNewChat(false)}
+          onStartChat={selectDirectChat}
+        />
+      )}
 
       {showGroupModal && (
         <CreateGroupModal

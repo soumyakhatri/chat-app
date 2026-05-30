@@ -17,7 +17,7 @@ function registerGroupMessageHandlers(io, socket) {
       const creatorId = socket.data.userId;
 
       if (!creatorId) {
-        socket.emit('group:error', { error: 'Register with user:register first' });
+        socket.emit('group:error', { error: 'Not authenticated' });
         return;
       }
 
@@ -57,7 +57,7 @@ function registerGroupMessageHandlers(io, socket) {
       const userId = socket.data.userId;
 
       if (!userId) {
-        socket.emit('group:error', { error: 'Register with user:register first' });
+        socket.emit('group:error', { error: 'Not authenticated' });
         return;
       }
 
@@ -91,7 +91,7 @@ function registerGroupMessageHandlers(io, socket) {
       const senderId = socket.data.userId;
 
       if (!senderId) {
-        socket.emit('message:error', { error: 'Register with user:register first' });
+        socket.emit('message:error', { error: 'Not authenticated' });
         return;
       }
 

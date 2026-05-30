@@ -24,10 +24,20 @@ const conversationSchema = new mongoose.Schema(
         message: 'Direct chats need exactly 2 members; groups need at least 2.',
       },
     },
+    readState: {
+      type: [
+        {
+          userId: { type: String, required: true },
+          lastReadAt: { type: Date, required: true },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
 
 conversationSchema.index({ type: 1, members: 1 });
+conversationSchema.index({ members: 1 });
 
 module.exports = mongoose.model('Conversation', conversationSchema);

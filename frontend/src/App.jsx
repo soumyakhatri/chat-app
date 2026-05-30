@@ -3,7 +3,15 @@ import LoginScreen from './components/LoginScreen';
 import ChatLayout from './components/ChatLayout';
 
 function AppContent() {
-  const { user, isRegistered } = useChat();
+  const { user, authLoading, isRegistered } = useChat();
+
+  if (authLoading) {
+    return (
+      <div className="loading-screen">
+        <p>Loading…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <LoginScreen />;

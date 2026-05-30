@@ -13,8 +13,20 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false,
+    },
   },
   { timestamps: true }
 );
+
+userSchema.methods.toPublicJSON = function toPublicJSON() {
+  return {
+    userId: this.userId,
+    displayName: this.displayName,
+  };
+};
 
 module.exports = mongoose.model('User', userSchema);
